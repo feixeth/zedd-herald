@@ -1,4 +1,4 @@
-# Privacy Guard Ledger
+# ZeddHerald
 
 **Un journal de confidentialité personnel. Pas un bloqueur. Un miroir.**
 
@@ -10,7 +10,7 @@ Développé par [Félix](https://zedd.fr) — [ZEDD](https://zedd.fr)
 
 La plupart des outils privacy se concentrent sur le blocage. Ils interceptent, filtrent, suppriment. C'est utile, mais ça cache le problème plutôt que de l'exposer.
 
-Privacy Guard Ledger part d'une intention différente : montrer ce qui se passe réellement quand tu navigues. Pas pour te faire peur, pas pour tout bloquer — juste pour savoir. Chaque site que tu visites charge des dizaines de ressources tierces. Des trackers, des pixels publicitaires, des scripts de fingerprinting. Tout ça se passe en arrière-plan, silencieusement, pendant que tu lis ton contenu.
+ZeddHerald part d'une intention différente : montrer ce qui se passe réellement quand tu navigues. Pas pour te faire peur, pas pour tout bloquer — juste pour savoir. Chaque site que tu visites charge des dizaines de ressources tierces. Des trackers, des pixels publicitaires, des scripts de fingerprinting. Tout ça se passe en arrière-plan, silencieusement, pendant que tu lis ton contenu.
 
 Ce projet, c'est une façon de mettre des chiffres sur ce que tu ressens intuitivement.
 

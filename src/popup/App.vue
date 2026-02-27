@@ -144,7 +144,7 @@
     </template>
 
     <!-- Footer -->
-    <div class="footer">Privacy Guard Ledger v0.1</div>
+    <div class="footer">ZeddHerald v0.1</div>
   </div>
 </template>
 

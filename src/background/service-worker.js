@@ -7,10 +7,22 @@ function createFreshState(domain) {
   return {
     domain,
     score: 100,
-    requests: { total: 0, thirdParty: 0, trackers: [], fingerprinters: [], cdns: [], unknown: [] },
-    flags: { hasHTTPS: true, hasThirdPartyCookies: false }
+    requests: {
+      total: 0,
+      thirdParty: 0,
+      trackers: [],
+      fingerprinters: [],
+      tagManagers: [],
+      cdns: [],
+      unknown: []
+    },
+    flags: {
+      hasHTTPS: true,
+      hasThirdPartyCookies: false
+    }
   }
 }
+
 
 function getRootDomain(hostname) {
   if (!hostname) return null
@@ -30,21 +42,36 @@ function classifyDomain(domain) {
   for (const c of [domain, root]) {
     if (!c) continue
     if (trackerList.fingerprinters[c]) return { type: 'fingerprinter' }
-    if (trackerList.cdns[c]) return { type: 'cdn' }
-    if (trackerList.trackers[c]) return { type: 'tracker', category: trackerList.trackers[c] }
+    if (trackerList.tag_managers[c])   return { type: 'tag_manager' }
+    if (trackerList.cdns[c])           return { type: 'cdn' }
+    if (trackerList.trackers[c])       return { type: 'tracker', category: trackerList.trackers[c] }
   }
   return { type: 'unknown' }
 }
 
+// ─── Scoring ──────────────────────────────────────────────────────────────────
 function calculateScore(state) {
   let score = 100
+
+  // HTTPS
   if (!state.flags.hasHTTPS) score -= 5
+
+  // Cookies tiers
   if (state.flags.hasThirdPartyCookies) score -= 10
+
+  // Fingerprinting (plafond -20)
   if (state.requests.fingerprinters.length > 0) score -= 20
+
+  // Tag managers : pénalité fixe -5 par TMS détecté, plafond -10
+  const tmPenalty = Math.min(state.requests.tagManagers.length * 5, 10)
+  score -= tmPenalty
+
+  // Trackers : pénalité dégressive, plafond -35
   const penalties = [10, 7, 5]
   let ded = 0
   state.requests.trackers.forEach((_, i) => { ded += i < 3 ? penalties[i] : 2 })
   score -= Math.min(ded, 35)
+
   return Math.max(0, score)
 }
 
@@ -82,20 +109,12 @@ function initTab(tabId, url) {
   const state = createFreshState(domain)
   state.flags.hasHTTPS = url.startsWith('https://')
   tabStates.set(tabId, state)
-  console.log(`[PGL] ✓ Init tab ${tabId} → ${domain}`)
+  console.log(`[PGL] Init tab ${tabId} → ${domain}`)
   updateBadge(tabId, 100)
   return true
 }
 
-// ── Navigation : webNavigation est plus fiable que tabs.onUpdated ─────────────
-browser.webNavigation.onCommitted.addListener((details) => {
-  // frameId 0 = frame principale uniquement, on ignore les iframes
-  if (details.frameId !== 0) return
-  console.log(`[PGL] onCommitted tab=${details.tabId} url=${details.url}`)
-  initTab(details.tabId, details.url)
-})
-
-// ── Requêtes tierces ──────────────────────────────────────────────────────────
+// ─── Requêtes ─────────────────────────────────────────────────────────────────
 browser.webRequest.onBeforeRequest.addListener(
   (details) => {
     const { tabId, url } = details
@@ -110,19 +129,24 @@ browser.webRequest.onBeforeRequest.addListener(
     if (requestRoot === state.domain) return
 
     state.requests.thirdParty++
+
     const allTracked = [
       ...state.requests.trackers.map(t => t.domain),
       ...state.requests.fingerprinters,
+      ...state.requests.tagManagers,
       ...state.requests.cdns,
       ...state.requests.unknown
     ]
     if (allTracked.includes(requestRoot)) return
 
     const c = classifyDomain(requestRoot)
-    if (c.type === 'tracker') state.requests.trackers.push({ domain: requestRoot, category: c.category })
-    else if (c.type === 'fingerprinter') state.requests.fingerprinters.push(requestRoot)
-    else if (c.type === 'cdn') state.requests.cdns.push(requestRoot)
-    else state.requests.unknown.push(requestRoot)
+    switch (c.type) {
+      case 'tracker':     state.requests.trackers.push({ domain: requestRoot, category: c.category }); break
+      case 'fingerprinter': state.requests.fingerprinters.push(requestRoot); break
+      case 'tag_manager': state.requests.tagManagers.push(requestRoot); break
+      case 'cdn':         state.requests.cdns.push(requestRoot); break
+      default:            state.requests.unknown.push(requestRoot)
+    }
 
     state.score = calculateScore(state)
     updateBadge(tabId, state.score)
@@ -130,7 +154,8 @@ browser.webRequest.onBeforeRequest.addListener(
   { urls: ['<all_urls>'] }
 )
 
-// ── Cookies tiers ─────────────────────────────────────────────────────────────
+
+
 browser.webRequest.onHeadersReceived.addListener(
   (details) => {
     const { tabId, responseHeaders } = details
@@ -149,10 +174,16 @@ browser.webRequest.onHeadersReceived.addListener(
   ['responseHeaders']
 )
 
-// ── Nettoyage ─────────────────────────────────────────────────────────────────
+// ─── Navigation ───────────────────────────────────────────────────────────────
+browser.webNavigation.onCommitted.addListener((details) => {
+  if (details.frameId !== 0) return
+  console.log(`[PGL] onCommitted tab=${details.tabId} → ${details.url}`)
+  initTab(details.tabId, details.url)
+})
+
 browser.tabs.onRemoved.addListener((tabId) => { tabStates.delete(tabId) })
 
-// ── Messages depuis popup ─────────────────────────────────────────────────────
+// ─── Messages ─────────────────────────────────────────────────────────────────
 browser.runtime.onMessage.addListener((message, sender) => {
   if (message.type === 'SPA_NAVIGATION' && sender.tab?.id) {
     initTab(sender.tab.id, message.url)

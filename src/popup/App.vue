@@ -1,6 +1,5 @@
 <template>
   <div class="popup">
-
     <!-- Header -->
     <div class="header">
       <div class="logo">
@@ -11,13 +10,11 @@
       </div>
       <div class="domain">{{ state?.domain || '—' }}</div>
     </div>
-
     <!-- Loading -->
     <div v-if="loading" class="center-state">
       <div class="spinner"></div>
       <p>Analyse en cours…</p>
     </div>
-
     <!-- Page système (chrome://, about:) -->
     <div v-else-if="!state" class="center-state">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5">
@@ -27,10 +24,8 @@
       </svg>
       <p>Page système non analysable</p>
     </div>
-
     <!-- Résultats -->
     <template v-else>
-
       <!-- Score principal -->
       <div class="score-section">
         <div class="score-ring" :style="{ '--score-color': scoreColor }">
@@ -56,12 +51,10 @@
           <div class="score-sub">{{ thirdPartyCount }} requêtes tierces sur {{ state.requests.total }}</div>
         </div>
       </div>
-
       <!-- Détail pénalités -->
       <div class="section">
         <div class="section-title">Détail</div>
         <div class="penalties">
-
           <div class="penalty-row" :class="{ active: !state.flags.hasHTTPS }">
             <div class="penalty-icon">🔒</div>
             <div class="penalty-info">
@@ -71,7 +64,6 @@
               </span>
             </div>
           </div>
-
           <div class="penalty-row" :class="{ active: state.requests.trackers.length > 0 }">
             <div class="penalty-icon">📡</div>
             <div class="penalty-info">
@@ -81,7 +73,16 @@
               </span>
             </div>
           </div>
-
+          <!-- TAG MANAGERS -->
+          <div class="penalty-row" :class="{ active: (state.requests.tagManagers || []).length > 0 }">
+            <div class="penalty-icon">🏷️</div>
+            <div class="penalty-info">
+              <span class="penalty-name">Tag managers</span>
+              <span class="penalty-status" :class="(state.requests.tagManagers || []).length === 0 ? 'ok' : 'warn'">
+                {{ (state.requests.tagManagers || []).length === 0 ? 'Aucun' : `-${tmDeduction} pts (${state.requests.tagManagers.length})` }}
+              </span>
+            </div>
+          </div>
           <div class="penalty-row" :class="{ active: state.requests.fingerprinters.length > 0 }">
             <div class="penalty-icon">🖐️</div>
             <div class="penalty-info">
@@ -91,7 +92,6 @@
               </span>
             </div>
           </div>
-
           <div class="penalty-row" :class="{ active: state.flags.hasThirdPartyCookies }">
             <div class="penalty-icon">🍪</div>
             <div class="penalty-info">
@@ -101,10 +101,8 @@
               </span>
             </div>
           </div>
-
         </div>
       </div>
-
       <!-- Trackers détaillés -->
       <div v-if="state.requests.trackers.length > 0" class="section">
         <div class="section-title">Trackers détectés</div>
@@ -115,7 +113,16 @@
           </div>
         </div>
       </div>
-
+      <!-- Tag managers détaillés -->
+      <div v-if="(state.requests.tagManagers || []).length > 0" class="section">
+        <div class="section-title">Tag managers détectés</div>
+        <div class="tracker-list">
+          <div v-for="domain in state.requests.tagManagers" :key="domain" class="tracker-item">
+            <span class="tracker-domain">{{ domain }}</span>
+            <span class="tracker-category tag_manager">TMS</span>
+          </div>
+        </div>
+      </div>
       <!-- Fingerprinters -->
       <div v-if="state.requests.fingerprinters.length > 0" class="section">
         <div class="section-title">Fingerprinting détecté</div>
@@ -126,7 +133,6 @@
           </div>
         </div>
       </div>
-
       <!-- CDNs (repliables) -->
       <div v-if="state.requests.cdns.length > 0" class="section">
         <button class="collapse-btn" @click="showCdns = !showCdns">
@@ -140,22 +146,17 @@
           </div>
         </div>
       </div>
-
     </template>
-
     <!-- Footer -->
     <div class="footer">ZeddHerald v0.1</div>
   </div>
 </template>
-
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import browser from 'webextension-polyfill'
-
 const state = ref(null)
 const loading = ref(true)
 const showCdns = ref(false)
-
 const scoreColor = computed(() => {
   if (!state.value) return '#64748b'
   const s = state.value.score
@@ -164,9 +165,7 @@ const scoreColor = computed(() => {
   if (s >= 30) return '#ef4444'
   return '#7f1d1d'
 })
-
 const thirdPartyCount = computed(() => state.value?.requests.thirdParty ?? 0)
-
 const trackerDeduction = computed(() => {
   if (!state.value) return 0
   const penalties = [10, 7, 5]
@@ -176,7 +175,10 @@ const trackerDeduction = computed(() => {
   })
   return Math.min(total, 35)
 })
-
+const tmDeduction = computed(() => {
+  if (!state.value) return 0
+  return Math.min((state.value.requests.tagManagers || []).length * 5, 10)
+})
 function categoryLabel(cat) {
   const labels = {
     analytics: 'Analytics',
@@ -186,17 +188,14 @@ function categoryLabel(cat) {
   }
   return labels[cat] ?? cat
 }
-
 onMounted(async () => {
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
     if (!tab?.id) { loading.value = false; return }
-
     const response = await browser.runtime.sendMessage({
       type: 'GET_STATE',
       tabId: tab.id
     })
-
     state.value = response
   } catch (e) {
     console.error('Popup error:', e)
@@ -205,7 +204,6 @@ onMounted(async () => {
   }
 })
 </script>
-
 <style scoped>
 .popup {
   padding: 0 0 8px;
@@ -213,7 +211,6 @@ onMounted(async () => {
   color: #e2e8f0;
   min-height: 200px;
 }
-
 /* Header */
 .header {
   padding: 12px 16px 10px;
@@ -238,7 +235,6 @@ onMounted(async () => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 /* États vides */
 .center-state {
   display: flex;
@@ -250,7 +246,6 @@ onMounted(async () => {
   color: #64748b;
   font-size: 13px;
 }
-
 .spinner {
   width: 24px;
   height: 24px;
@@ -260,7 +255,6 @@ onMounted(async () => {
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-
 /* Score */
 .score-section {
   display: flex;
@@ -269,7 +263,6 @@ onMounted(async () => {
   padding: 16px;
   border-bottom: 1px solid #1e293b;
 }
-
 .score-ring {
   position: relative;
   width: 80px;
@@ -309,7 +302,6 @@ onMounted(async () => {
   font-size: 10px;
   color: #64748b;
 }
-
 .score-meta { flex: 1; }
 .score-label {
   font-size: 18px;
@@ -320,7 +312,6 @@ onMounted(async () => {
   font-size: 11px;
   color: #64748b;
 }
-
 /* Sections */
 .section {
   padding: 10px 16px;
@@ -334,7 +325,6 @@ onMounted(async () => {
   margin-bottom: 8px;
   font-weight: 600;
 }
-
 /* Pénalités */
 .penalties { display: flex; flex-direction: column; gap: 4px; }
 .penalty-row {
@@ -359,7 +349,7 @@ onMounted(async () => {
 .penalty-status { font-size: 11px; font-weight: 600; }
 .penalty-status.ok { color: #22c55e; }
 .penalty-status.bad { color: #ef4444; }
-
+.penalty-status.warn { color: #f59e0b; }
 /* Tracker list */
 .tracker-list { display: flex; flex-direction: column; gap: 3px; }
 .tracker-item {
@@ -385,8 +375,8 @@ onMounted(async () => {
 .tracker-category.social { background: #14532d; color: #bbf7d0; }
 .tracker-category.marketing { background: #713f12; color: #fef3c7; }
 .tracker-category.fingerprinting { background: #581c87; color: #e9d5ff; }
+.tracker-category.tag_manager { background: #0f4c75; color: #90e0ef; }
 .tracker-category.cdn { background: #164e63; color: #a5f3fc; }
-
 /* Collapse CDN */
 .collapse-btn {
   width: 100%;
@@ -402,7 +392,6 @@ onMounted(async () => {
   margin-bottom: 6px;
 }
 .collapse-btn:hover { color: #94a3b8; }
-
 /* Footer */
 .footer {
   text-align: center;

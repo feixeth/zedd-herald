@@ -6,16 +6,18 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
-        <span>Privacy Guard</span>
+        <span>ZeddHerald</span>
       </div>
       <div class="domain">{{ state?.domain || '—' }}</div>
     </div>
+
     <!-- Loading -->
     <div v-if="loading" class="center-state">
       <div class="spinner"></div>
       <p>Analyse en cours…</p>
     </div>
-    <!-- Page système (chrome://, about:) -->
+
+    <!-- Page système -->
     <div v-else-if="!state" class="center-state">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5">
         <circle cx="12" cy="12" r="10"/>
@@ -24,11 +26,12 @@
       </svg>
       <p>Page système non analysable</p>
     </div>
+
     <!-- Résultats -->
     <template v-else>
       <!-- Score principal -->
       <div class="score-section">
-        <div class="score-ring" :style="{ '--score-color': scoreColor }">
+        <div class="score-ring">
           <svg viewBox="0 0 100 100" class="ring-svg">
             <circle cx="50" cy="50" r="40" class="ring-bg"/>
             <circle
@@ -48,13 +51,56 @@
         </div>
         <div class="score-meta">
           <div class="score-label" :style="{ color: scoreColor }">{{ state.label }}</div>
-          <div class="score-sub">{{ thirdPartyCount }} requêtes tierces sur {{ state.requests.total }}</div>
+          <div class="score-sub">{{ state.requests.thirdParty }} domaines tiers / {{ state.requests.total }} req.</div>
+          <!-- Server-side tagging warning -->
+          <div v-if="state.sstWarning" class="sst-badge" @mouseenter="showSstTooltip = true" @mouseleave="showSstTooltip = false">
+            <span class="sst-icon">🔀</span>
+            <span class="sst-label">Tracking server-side détecté</span>
+            <div v-if="showSstTooltip" class="sst-tooltip">
+              <strong>{{ state.sstWarning }}</strong> a été détecté sur ce site.<br><br>
+              Ce type d'outil déclenche des trackers côté serveur (Google Analytics, pixels pub, Criteo…) de façon invisible pour le navigateur. Le score affiché peut être <strong>sous-estimé</strong> : la réalité privacy est probablement moins bonne.
+            </div>
+          </div>
+
+          <!-- Réputation -->
+          <div v-if="state.reputation" class="reputation-badge" @mouseenter="showRepTooltip = true" @mouseleave="showRepTooltip = false">
+            <span class="rep-icon">⚠️</span>
+            <span class="rep-label">Réputation surveillée −{{ state.reputation.penalty }} pts</span>
+            <div v-if="showRepTooltip" class="rep-tooltip">{{ state.reputation.reason }}</div>
+          </div>
+          <div v-if="state.requests.trackers.length > 0" class="score-breakdown">
+            <span v-if="trackersByCategory.advertising_major?.length" class="breakdown-chip advertising_major">
+              {{ trackersByCategory.advertising_major.length }} GAFAM
+            </span>
+            <span v-if="trackersByCategory.advertising.length" class="breakdown-chip advertising">
+              {{ trackersByCategory.advertising.length }} pub
+            </span>
+            <span v-if="trackersByCategory.social.length" class="breakdown-chip social">
+              {{ trackersByCategory.social.length }} social
+            </span>
+            <span v-if="trackersByCategory.analytics.length" class="breakdown-chip analytics">
+              {{ trackersByCategory.analytics.length }} analytics
+            </span>
+            <span v-if="trackersByCategory.marketing.length" class="breakdown-chip marketing">
+              {{ trackersByCategory.marketing.length }} CRM
+            </span>
+          </div>
         </div>
       </div>
+
       <!-- Détail pénalités -->
       <div class="section">
-        <div class="section-title">Détail</div>
+        <div class="section-title">Détail du score</div>
         <div class="penalties">
+
+          <div v-if="state.reputation" class="penalty-row active reputation-row">
+            <div class="penalty-icon">⚠️</div>
+            <div class="penalty-info">
+              <span class="penalty-name">Réputation (first-party)</span>
+              <span class="penalty-status bad">−{{ state.reputation.penalty }} pts</span>
+            </div>
+          </div>
+
           <div class="penalty-row" :class="{ active: !state.flags.hasHTTPS }">
             <div class="penalty-icon">🔒</div>
             <div class="penalty-info">
@@ -64,16 +110,67 @@
               </span>
             </div>
           </div>
-          <div class="penalty-row" :class="{ active: state.requests.trackers.length > 0 }">
-            <div class="penalty-icon">📡</div>
+
+          <div class="penalty-row" :class="{ active: state.requests.fingerprinters.length > 0 }">
+            <div class="penalty-icon">🖐️</div>
             <div class="penalty-info">
-              <span class="penalty-name">Trackers</span>
-              <span class="penalty-status" :class="state.requests.trackers.length === 0 ? 'ok' : 'bad'">
-                {{ state.requests.trackers.length === 0 ? 'Aucun' : `-${trackerDeduction} pts (${state.requests.trackers.length})` }}
+              <span class="penalty-name">Fingerprinting</span>
+              <span class="penalty-status" :class="state.requests.fingerprinters.length === 0 ? 'ok' : 'bad'">
+                {{ state.requests.fingerprinters.length === 0 ? 'Aucun' : `-25 pts (${state.requests.fingerprinters.length})` }}
               </span>
             </div>
           </div>
-          <!-- TAG MANAGERS -->
+
+          <div class="penalty-row" :class="{ active: (trackersByCategory.advertising_major?.length ?? 0) > 0 }">
+            <div class="penalty-icon">⚠️</div>
+            <div class="penalty-info">
+              <span class="penalty-name">GAFAM publicitaires</span>
+              <span class="penalty-status" :class="(trackersByCategory.advertising_major?.length ?? 0) === 0 ? 'ok' : 'bad'">
+                {{ (trackersByCategory.advertising_major?.length ?? 0) === 0 ? 'Aucun' : `-${advMajorDeduction} pts (${trackersByCategory.advertising_major.length})` }}
+              </span>
+            </div>
+          </div>
+
+          <div class="penalty-row" :class="{ active: trackersByCategory.advertising.length > 0 }">
+            <div class="penalty-icon">📢</div>
+            <div class="penalty-info">
+              <span class="penalty-name">Trackers pub</span>
+              <span class="penalty-status" :class="trackersByCategory.advertising.length === 0 ? 'ok' : 'bad'">
+                {{ trackersByCategory.advertising.length === 0 ? 'Aucun' : `-${advDeduction} pts (${trackersByCategory.advertising.length})` }}
+              </span>
+            </div>
+          </div>
+
+          <div class="penalty-row" :class="{ active: trackersByCategory.social.length > 0 }">
+            <div class="penalty-icon">👥</div>
+            <div class="penalty-info">
+              <span class="penalty-name">Pixels sociaux</span>
+              <span class="penalty-status" :class="trackersByCategory.social.length === 0 ? 'ok' : 'bad'">
+                {{ trackersByCategory.social.length === 0 ? 'Aucun' : `-${socialDeduction} pts (${trackersByCategory.social.length})` }}
+              </span>
+            </div>
+          </div>
+
+          <div class="penalty-row" :class="{ active: trackersByCategory.analytics.length > 0 }">
+            <div class="penalty-icon">📊</div>
+            <div class="penalty-info">
+              <span class="penalty-name">Analytics</span>
+              <span class="penalty-status" :class="trackersByCategory.analytics.length === 0 ? 'ok' : 'warn'">
+                {{ trackersByCategory.analytics.length === 0 ? 'Aucun' : `-${anaDeduction} pts (${trackersByCategory.analytics.length})` }}
+              </span>
+            </div>
+          </div>
+
+          <div class="penalty-row" :class="{ active: trackersByCategory.marketing.length > 0 }">
+            <div class="penalty-icon">📧</div>
+            <div class="penalty-info">
+              <span class="penalty-name">Marketing / CRM</span>
+              <span class="penalty-status" :class="trackersByCategory.marketing.length === 0 ? 'ok' : 'warn'">
+                {{ trackersByCategory.marketing.length === 0 ? 'Aucun' : `-${mktDeduction} pts (${trackersByCategory.marketing.length})` }}
+              </span>
+            </div>
+          </div>
+
           <div class="penalty-row" :class="{ active: (state.requests.tagManagers || []).length > 0 }">
             <div class="penalty-icon">🏷️</div>
             <div class="penalty-info">
@@ -83,27 +180,30 @@
               </span>
             </div>
           </div>
-          <div class="penalty-row" :class="{ active: state.requests.fingerprinters.length > 0 }">
-            <div class="penalty-icon">🖐️</div>
-            <div class="penalty-info">
-              <span class="penalty-name">Fingerprinting</span>
-              <span class="penalty-status" :class="state.requests.fingerprinters.length === 0 ? 'ok' : 'bad'">
-                {{ state.requests.fingerprinters.length === 0 ? 'Aucun' : `-20 pts (${state.requests.fingerprinters.length})` }}
-              </span>
-            </div>
-          </div>
+
           <div class="penalty-row" :class="{ active: state.flags.hasThirdPartyCookies }">
             <div class="penalty-icon">🍪</div>
             <div class="penalty-info">
               <span class="penalty-name">Cookies tiers</span>
               <span class="penalty-status" :class="!state.flags.hasThirdPartyCookies ? 'ok' : 'bad'">
-                {{ state.flags.hasThirdPartyCookies ? '-10 pts' : 'Aucun' }}
+                {{ state.flags.hasThirdPartyCookies ? '-8 pts' : 'Aucun' }}
               </span>
             </div>
           </div>
+
+          <!-- CMP : neutre, informatif -->
+          <div v-if="(state.requests.cmps || []).length > 0" class="penalty-row active cmp-row">
+            <div class="penalty-icon">✅</div>
+            <div class="penalty-info">
+              <span class="penalty-name">Consentement (CMP)</span>
+              <span class="penalty-status cmp">{{ state.requests.cmps.length }} détecté{{ state.requests.cmps.length > 1 ? 's' : '' }}</span>
+            </div>
+          </div>
+
         </div>
       </div>
-      <!-- Trackers détaillés -->
+
+      <!-- Trackers par catégorie -->
       <div v-if="state.requests.trackers.length > 0" class="section">
         <div class="section-title">Trackers détectés</div>
         <div class="tracker-list">
@@ -113,16 +213,7 @@
           </div>
         </div>
       </div>
-      <!-- Tag managers détaillés -->
-      <div v-if="(state.requests.tagManagers || []).length > 0" class="section">
-        <div class="section-title">Tag managers détectés</div>
-        <div class="tracker-list">
-          <div v-for="domain in state.requests.tagManagers" :key="domain" class="tracker-item">
-            <span class="tracker-domain">{{ domain }}</span>
-            <span class="tracker-category tag_manager">TMS</span>
-          </div>
-        </div>
-      </div>
+
       <!-- Fingerprinters -->
       <div v-if="state.requests.fingerprinters.length > 0" class="section">
         <div class="section-title">Fingerprinting détecté</div>
@@ -133,6 +224,32 @@
           </div>
         </div>
       </div>
+
+      <!-- Tag managers -->
+      <div v-if="(state.requests.tagManagers || []).length > 0" class="section">
+        <div class="section-title">Tag managers</div>
+        <div class="tracker-list">
+          <div v-for="domain in state.requests.tagManagers" :key="domain" class="tracker-item">
+            <span class="tracker-domain">{{ domain }}</span>
+            <span class="tracker-category tag_manager">TMS</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CMPs (repliables, ton neutre) -->
+      <div v-if="(state.requests.cmps || []).length > 0" class="section">
+        <button class="collapse-btn" @click="showCmps = !showCmps">
+          Outils de consentement ({{ state.requests.cmps.length }})
+          <span>{{ showCmps ? '▲' : '▼' }}</span>
+        </button>
+        <div v-if="showCmps" class="tracker-list">
+          <div v-for="domain in state.requests.cmps" :key="domain" class="tracker-item cmp-item">
+            <span class="tracker-domain">{{ domain }}</span>
+            <span class="tracker-category cmp-badge">CMP</span>
+          </div>
+        </div>
+      </div>
+
       <!-- CDNs (repliables) -->
       <div v-if="state.requests.cdns.length > 0" class="section">
         <button class="collapse-btn" @click="showCdns = !showCdns">
@@ -146,17 +263,24 @@
           </div>
         </div>
       </div>
+
     </template>
-    <!-- Footer -->
-    <div class="footer">ZeddHerald v0.1</div>
+
+    <div class="footer">ZeddHerald v0.2</div>
   </div>
 </template>
+
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import browser from 'webextension-polyfill'
+
 const state = ref(null)
 const loading = ref(true)
 const showCdns = ref(false)
+const showCmps = ref(false)
+const showRepTooltip = ref(false)
+const showSstTooltip = ref(false)
+
 const scoreColor = computed(() => {
   if (!state.value) return '#64748b'
   const s = state.value.score
@@ -165,37 +289,46 @@ const scoreColor = computed(() => {
   if (s >= 30) return '#ef4444'
   return '#7f1d1d'
 })
-const thirdPartyCount = computed(() => state.value?.requests.thirdParty ?? 0)
-const trackerDeduction = computed(() => {
-  if (!state.value) return 0
-  const penalties = [10, 7, 5]
-  let total = 0
-  state.value.requests.trackers.forEach((_, i) => {
-    total += i < 3 ? penalties[i] : 2
-  })
-  return Math.min(total, 35)
-})
-const tmDeduction = computed(() => {
-  if (!state.value) return 0
-  return Math.min((state.value.requests.tagManagers || []).length * 5, 10)
-})
-function categoryLabel(cat) {
-  const labels = {
-    analytics: 'Analytics',
-    advertising: 'Pub',
-    social: 'Social',
-    marketing: 'Marketing'
+
+const trackersByCategory = computed(() => {
+  const out = { advertising_major: [], advertising: [], social: [], analytics: [], marketing: [], other: [] }
+  if (!state.value) return out
+  for (const t of state.value.requests.trackers) {
+    if (out[t.category]) out[t.category].push(t)
+    else out.other.push(t)
   }
-  return labels[cat] ?? cat
+  return out
+})
+
+const advDeduction = computed(() => {
+  let p = 0
+  trackersByCategory.value.advertising.forEach((_, i) => { p += [10, 8, 6][i] ?? 4 })
+  return Math.min(p, 30)
+})
+const socialDeduction = computed(() => Math.min(trackersByCategory.value.social.length * 8, 16))
+const anaDeduction = computed(() => {
+  let p = 0
+  trackersByCategory.value.analytics.forEach((_, i) => { p += [4, 3, 2][i] ?? 1 })
+  return Math.min(p, 12)
+})
+const mktDeduction = computed(() => {
+  let p = 0
+  trackersByCategory.value.marketing.forEach((_, i) => { p += [4, 3][i] ?? 2 })
+  return Math.min(p, 8)
+})
+const tmDeduction = computed(() => Math.min((state.value?.requests.tagManagers || []).length * 3, 6))
+
+const advMajorDeduction = computed(() => Math.min((trackersByCategory.value.advertising_major?.length ?? 0) * 20, 40))
+
+function categoryLabel(cat) {
+  return { analytics: 'Analytics', advertising: 'Pub', advertising_major: 'GAFAM', social: 'Social', marketing: 'CRM' }[cat] ?? cat
 }
+
 onMounted(async () => {
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
     if (!tab?.id) { loading.value = false; return }
-    const response = await browser.runtime.sendMessage({
-      type: 'GET_STATE',
-      tabId: tab.id
-    })
+    const response = await browser.runtime.sendMessage({ type: 'GET_STATE', tabId: tab.id })
     state.value = response
   } catch (e) {
     console.error('Popup error:', e)
@@ -204,6 +337,7 @@ onMounted(async () => {
   }
 })
 </script>
+
 <style scoped>
 .popup {
   padding: 0 0 8px;
@@ -211,7 +345,6 @@ onMounted(async () => {
   color: #e2e8f0;
   min-height: 200px;
 }
-/* Header */
 .header {
   padding: 12px 16px 10px;
   border-bottom: 1px solid #1e293b;
@@ -235,7 +368,6 @@ onMounted(async () => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* États vides */
 .center-state {
   display: flex;
   flex-direction: column;
@@ -255,7 +387,7 @@ onMounted(async () => {
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-/* Score */
+
 .score-section {
   display: flex;
   align-items: center;
@@ -274,11 +406,7 @@ onMounted(async () => {
   height: 100%;
   transform: rotate(-90deg);
 }
-.ring-bg {
-  fill: none;
-  stroke: #1e293b;
-  stroke-width: 8;
-}
+.ring-bg { fill: none; stroke: #1e293b; stroke-width: 8; }
 .ring-progress {
   fill: none;
   stroke-width: 8;
@@ -293,26 +421,25 @@ onMounted(async () => {
   justify-content: center;
   flex-direction: column;
 }
-.score-number {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1;
-}
-.score-max {
-  font-size: 10px;
-  color: #64748b;
-}
+.score-number { font-size: 22px; font-weight: 700; line-height: 1; }
+.score-max { font-size: 10px; color: #64748b; }
 .score-meta { flex: 1; }
-.score-label {
-  font-size: 18px;
+.score-label { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.score-sub { font-size: 11px; color: #64748b; margin-bottom: 6px; }
+.score-breakdown { display: flex; flex-wrap: wrap; gap: 4px; }
+.breakdown-chip {
+  font-size: 9px;
   font-weight: 700;
-  margin-bottom: 4px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
 }
-.score-sub {
-  font-size: 11px;
-  color: #64748b;
-}
-/* Sections */
+.breakdown-chip.advertising_major { background: #450a0a; color: #fca5a5; border: 1px solid #7f1d1d; }
+.breakdown-chip.advertising { background: #7f1d1d; color: #fecaca; }
+.breakdown-chip.social { background: #14532d; color: #bbf7d0; }
+.breakdown-chip.analytics { background: #1d4ed8; color: #bfdbfe; }
+.breakdown-chip.marketing { background: #713f12; color: #fef3c7; }
+
 .section {
   padding: 10px 16px;
   border-bottom: 1px solid #1e293b;
@@ -325,7 +452,6 @@ onMounted(async () => {
   margin-bottom: 8px;
   font-weight: 600;
 }
-/* Pénalités */
 .penalties { display: flex; flex-direction: column; gap: 4px; }
 .penalty-row {
   display: flex;
@@ -334,10 +460,11 @@ onMounted(async () => {
   padding: 6px 8px;
   border-radius: 6px;
   background: #1e293b;
-  opacity: 0.5;
+  opacity: 0.4;
   transition: opacity 0.2s;
 }
 .penalty-row.active { opacity: 1; }
+.penalty-row.cmp-row { border: 1px solid #0e4a6a; background: #0c2340; }
 .penalty-icon { font-size: 14px; }
 .penalty-info {
   flex: 1;
@@ -350,7 +477,8 @@ onMounted(async () => {
 .penalty-status.ok { color: #22c55e; }
 .penalty-status.bad { color: #ef4444; }
 .penalty-status.warn { color: #f59e0b; }
-/* Tracker list */
+.penalty-status.cmp { color: #38bdf8; }
+
 .tracker-list { display: flex; flex-direction: column; gap: 3px; }
 .tracker-item {
   display: flex;
@@ -360,7 +488,8 @@ onMounted(async () => {
   background: #1e293b;
   border-radius: 5px;
 }
-.tracker-item.neutral { opacity: 0.6; }
+.tracker-item.neutral { opacity: 0.5; }
+.tracker-item.cmp-item { background: #0c2340; border: 1px solid #0e4a6a; }
 .tracker-domain { font-size: 11px; color: #94a3b8; }
 .tracker-category {
   font-size: 9px;
@@ -371,13 +500,15 @@ onMounted(async () => {
   border-radius: 10px;
 }
 .tracker-category.analytics { background: #1d4ed8; color: #bfdbfe; }
+.tracker-category.advertising_major { background: #450a0a; color: #fca5a5; border: 1px solid #7f1d1d; }
 .tracker-category.advertising { background: #7f1d1d; color: #fecaca; }
 .tracker-category.social { background: #14532d; color: #bbf7d0; }
 .tracker-category.marketing { background: #713f12; color: #fef3c7; }
 .tracker-category.fingerprinting { background: #581c87; color: #e9d5ff; }
-.tracker-category.tag_manager { background: #0f4c75; color: #90e0ef; }
+.tracker-category.tag_manager { background: #1e3a5f; color: #93c5fd; }
 .tracker-category.cdn { background: #164e63; color: #a5f3fc; }
-/* Collapse CDN */
+.tracker-category.cmp-badge { background: #0e4a6a; color: #38bdf8; }
+
 .collapse-btn {
   width: 100%;
   background: none;
@@ -392,7 +523,6 @@ onMounted(async () => {
   margin-bottom: 6px;
 }
 .collapse-btn:hover { color: #94a3b8; }
-/* Footer */
 .footer {
   text-align: center;
   font-size: 10px;

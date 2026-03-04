@@ -13,16 +13,18 @@ function createFreshState(domain) {
       trackers: [],
       fingerprinters: [],
       tagManagers: [],
+      cmps: [],
       cdns: [],
       unknown: []
     },
     flags: {
       hasHTTPS: true,
       hasThirdPartyCookies: false
-    }
+    },
+    reputation: null,
+    sstWarning: null
   }
 }
-
 
 function getRootDomain(hostname) {
   if (!hostname) return null
@@ -43,6 +45,7 @@ function classifyDomain(domain) {
     if (!c) continue
     if (trackerList.fingerprinters[c]) return { type: 'fingerprinter' }
     if (trackerList.tag_managers[c])   return { type: 'tag_manager' }
+    if (trackerList.cmps?.[c])         return { type: 'cmp' }
     if (trackerList.cdns[c])           return { type: 'cdn' }
     if (trackerList.trackers[c])       return { type: 'tracker', category: trackerList.trackers[c] }
   }
@@ -53,24 +56,60 @@ function classifyDomain(domain) {
 function calculateScore(state) {
   let score = 100
 
+  // Réputation du domaine (first-party tracking)
+  if (state.reputation) score -= state.reputation.penalty
+
   // HTTPS
   if (!state.flags.hasHTTPS) score -= 5
 
   // Cookies tiers
-  if (state.flags.hasThirdPartyCookies) score -= 10
+  if (state.flags.hasThirdPartyCookies) score -= 8
 
-  // Fingerprinting (plafond -20)
-  if (state.requests.fingerprinters.length > 0) score -= 20
+  // Fingerprinting (pénalité unique fixe -25)
+  if (state.requests.fingerprinters.length > 0) score -= 25
 
-  // Tag managers : pénalité fixe -5 par TMS détecté, plafond -10
-  const tmPenalty = Math.min(state.requests.tagManagers.length * 5, 10)
-  score -= tmPenalty
+  // Tag managers : -3 par TMS, plafond -6
+  score -= Math.min(state.requests.tagManagers.length * 3, 6)
 
-  // Trackers : pénalité dégressive, plafond -35
-  const penalties = [10, 7, 5]
-  let ded = 0
-  state.requests.trackers.forEach((_, i) => { ded += i < 3 ? penalties[i] : 2 })
-  score -= Math.min(ded, 35)
+  // CMP : 0 pénalité (juste affiché)
+
+  // Trackers : pénalité par sous-catégorie
+  // Advertising : -10/-8/-6 dégressif, plafond -30
+  // Social : -8 fixe par réseau, plafond -16
+  // Analytics : -4/-3/-2 dégressif, plafond -12
+  // Marketing : -4/-3 dégressif, plafond -8
+
+  const byCategory = { advertising_major: [], advertising: [], social: [], analytics: [], marketing: [], other: [] }
+  for (const t of state.requests.trackers) {
+    const cat = t.category
+    if (byCategory[cat]) byCategory[cat].push(t)
+    else byCategory.other.push(t)
+  }
+
+  // Advertising major (GAFAM) : -20 fixe par domaine, plafond -40
+  const majorCount = byCategory.advertising_major?.length ?? 0
+  score -= Math.min(majorCount * 20, 40)
+
+  // Advertising standard
+  let advPen = 0
+  byCategory.advertising.forEach((_, i) => { advPen += [10, 8, 6][i] ?? 4 })
+  score -= Math.min(advPen, 30)
+
+  // Social
+  score -= Math.min(byCategory.social.length * 8, 16)
+
+  // Analytics
+  let anaPen = 0
+  byCategory.analytics.forEach((_, i) => { anaPen += [4, 3, 2][i] ?? 1 })
+  score -= Math.min(anaPen, 12)
+
+  // Marketing
+  let mktPen = 0
+  byCategory.marketing.forEach((_, i) => { mktPen += [4, 3][i] ?? 2 })
+  score -= Math.min(mktPen, 8)
+
+  // Other (fallback)
+  score -= Math.min(byCategory.other.length * 3, 9)
 
   return Math.max(0, score)
 }
@@ -108,8 +147,13 @@ function initTab(tabId, url) {
   const domain = getRootDomain(hostname)
   const state = createFreshState(domain)
   state.flags.hasHTTPS = url.startsWith('https://')
+  // Vérifier réputation du domaine visité
+  const repData = trackerList.reputation?.[domain]
+  if (repData) {
+    state.reputation = { domain, penalty: repData.penalty, reason: repData.reason }
+  }
   tabStates.set(tabId, state)
-  console.log(`[PGL] Init tab ${tabId} → ${domain}`)
+  console.log(`[ZH] Init tab ${tabId} → ${domain}${repData ? ' [REPUTATION]' : ''}`)
   updateBadge(tabId, 100)
   return true
 }
@@ -134,18 +178,46 @@ browser.webRequest.onBeforeRequest.addListener(
       ...state.requests.trackers.map(t => t.domain),
       ...state.requests.fingerprinters,
       ...state.requests.tagManagers,
+      ...state.requests.cmps,
       ...state.requests.cdns,
       ...state.requests.unknown
     ]
     if (allTracked.includes(requestRoot)) return
 
+    // Détection server-side tagging sur sous-domaines first-party
+    if (!state.sstWarning) {
+      const fullHost = hostname.toLowerCase()
+      const SST_PATTERNS = {
+        'cdtm.': 'Commanders Act', 'tagcommander.': 'TagCommander',
+        'commandersact.': 'Commanders Act', 'sgtm.': 'GTM Server-Side',
+        'server-gtm.': 'GTM Server-Side', 'stape.': 'Stape/GTM SST',
+        'tealium.': 'Tealium', 'collect.tealiumiq.': 'Tealium',
+        'adobedtm.': 'Adobe Launch', 'segment.': 'Segment',
+        'eulerian.': 'Eulerian', 'ati-host.': 'AT Internet', 'piano.': 'Piano Analytics',
+        'gtm.': 'GTM Server-Side',
+      }
+      const SST_URL_KW = ['tagcommander','tc_nav','tc_privacy','/tag/xcare','/tag/xperf','server-side','sst.']
+      const urlLow = details.url.toLowerCase()
+      for (const [pat, label] of Object.entries(SST_PATTERNS)) {
+        if (fullHost.includes(pat) && requestRoot !== state.domain) {
+          state.sstWarning = label; break
+        }
+      }
+      if (!state.sstWarning) {
+        for (const kw of SST_URL_KW) {
+          if (urlLow.includes(kw)) { state.sstWarning = 'TMS server-side détecté'; break }
+        }
+      }
+    }
+
     const c = classifyDomain(requestRoot)
     switch (c.type) {
-      case 'tracker':     state.requests.trackers.push({ domain: requestRoot, category: c.category }); break
+      case 'tracker':      state.requests.trackers.push({ domain: requestRoot, category: c.category }); break
       case 'fingerprinter': state.requests.fingerprinters.push(requestRoot); break
-      case 'tag_manager': state.requests.tagManagers.push(requestRoot); break
-      case 'cdn':         state.requests.cdns.push(requestRoot); break
-      default:            state.requests.unknown.push(requestRoot)
+      case 'tag_manager':  state.requests.tagManagers.push(requestRoot); break
+      case 'cmp':          state.requests.cmps.push(requestRoot); break
+      case 'cdn':          state.requests.cdns.push(requestRoot); break
+      default:             state.requests.unknown.push(requestRoot)
     }
 
     state.score = calculateScore(state)
@@ -153,8 +225,6 @@ browser.webRequest.onBeforeRequest.addListener(
   },
   { urls: ['<all_urls>'] }
 )
-
-
 
 browser.webRequest.onHeadersReceived.addListener(
   (details) => {
@@ -177,7 +247,6 @@ browser.webRequest.onHeadersReceived.addListener(
 // ─── Navigation ───────────────────────────────────────────────────────────────
 browser.webNavigation.onCommitted.addListener((details) => {
   if (details.frameId !== 0) return
-  console.log(`[PGL] onCommitted tab=${details.tabId} → ${details.url}`)
   initTab(details.tabId, details.url)
 })
 
@@ -191,10 +260,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
   }
   if (message.type === 'GET_STATE') {
     const state = tabStates.get(message.tabId)
-    console.log(`[PGL] GET_STATE tabId=${message.tabId} →`, state ? `score=${state.score}` : 'null')
     if (!state) return Promise.resolve(null)
     return Promise.resolve({ ...state, label: getScoreLabel(state.score) })
   }
 })
-
-console.log('[PGL] Service worker démarré')

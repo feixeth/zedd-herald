@@ -1,5 +1,5 @@
 // Content script — pas d'import, bundlé en IIFE autonome
-// On utilise directement l'API chrome/browser native (identiques pour sendMessage)
+// On utilise directement l'API browser
 
 const api = typeof browser !== 'undefined' ? browser : chrome
 

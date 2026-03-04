@@ -398,7 +398,20 @@
     "freshworks.com": "analytics",
     "freshdesk.com": "analytics",
     "wistia.com": "analytics",
-    "crisp.chat": "analytics"
+    "crisp.chat": "analytics",
+    "browser-intake-datadoghq.eu": "analytics",
+    "datadoghq.eu": "analytics",
+    "beyable.com": "advertising",
+    "valiuz.com": "analytics",
+    "y-track.com": "analytics",
+    "leadplace.fr": "marketing",
+    "my-probance.one": "marketing",
+    "vzbl.eu": "analytics",
+    "affilae.com": "advertising",
+    "sibautomation.com": "marketing",
+    "brevo.com": "marketing",
+    "thechatbotfactory.com": "analytics",
+    "bing.net": "advertising"
   },
   "fingerprinters": {
     "unbxdapi.com": true,
@@ -4236,7 +4249,11 @@
     "imgur.com": true,
     "stripe.network": true,
     "awswaf.com": true,
-    "cloudflare.net": true
+    "cloudflare.net": true,
+    "facil-iti.app": true,
+    "azureedge.net": true,
+    "azurewebsites.net": true,
+    "googleapis.com": true
   },
   "tag_managers": {
     "googletagmanager.com": true,

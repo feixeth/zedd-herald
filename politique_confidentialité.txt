@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZeddHerald – Politique de confidentialité</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f172a;
+      color: #94a3b8;
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 32px;
+    }
+    .badge svg { flex-shrink: 0; }
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+    .updated {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 48px;
+    }
+
+    .highlight-box {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 40px;
+    }
+    .highlight-box p {
+      font-size: 15px;
+      color: #166534;
+      font-weight: 500;
+    }
+    .highlight-box p strong { color: #14532d; }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 40px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    p { margin-bottom: 14px; color: #334155; font-size: 15px; }
+    ul {
+      margin: 12px 0 20px 0;
+      padding-left: 0;
+      list-style: none;
+    }
+    ul li {
+      padding: 8px 0 8px 24px;
+      position: relative;
+      color: #334155;
+      font-size: 15px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    ul li:last-child { border-bottom: none; }
+    ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #94a3b8;
+    }
+
+    .permission-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+    .permission-card .perm-name {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #4f46e5;
+      background: #eef2ff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+    .permission-card p { margin: 0; font-size: 14px; }
+
+    .contact-box {
+      background: #0f172a;
+      color: #94a3b8;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-top: 48px;
+    }
+    .contact-box h3 { color: #e2e8f0; font-size: 16px; margin-bottom: 12px; }
+    .contact-box p { color: #64748b; font-size: 14px; margin: 0; }
+    .contact-box a { color: #818cf8; text-decoration: none; }
+    .contact-box a:hover { text-decoration: underline; }
+
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="badge">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    ZeddHerald – Extension Chrome / Firefox
+  </div>
+
+  <h1>Politique de confidentialité</h1>
+  <p class="subtitle">Audit de confidentialité des sites web que vous visitez.</p>
+  <p class="updated">Dernière mise à jour : mars 2026 · Développé par <strong>ZEDD</strong> (Grenoble, France)</p>
+
+  <div class="highlight-box">
+    <p>
+      <strong>En résumé :</strong> ZeddHerald n'envoie aucune donnée à aucun serveur. Aucune information sur votre navigation, vos habitudes ou votre identité n'est collectée, stockée ou partagée. L'extension fonctionne entièrement dans votre navigateur, en local.
+    </p>
+  </div>
+
+  <h2>1. Ce que ZeddHerald fait</h2>
+  <p>
+    ZeddHerald est une extension de navigateur qui analyse les requêtes réseau des pages web que vous visitez afin de détecter la présence de trackers, scripts de fingerprinting, tag managers et outils publicitaires. Sur cette base, elle calcule un score de confidentialité et l'affiche dans un popup.
+  </p>
+  <p>L'analyse est réalisée en temps réel, localement dans votre navigateur, sans aucune transmission de données.</p>
+
+  <h2>2. Données collectées</h2>
+  <p><strong>ZeddHerald ne collecte aucune donnée personnelle.</strong> Plus précisément :</p>
+  <ul>
+    <li>Aucune URL visitée n'est enregistrée ou transmise</li>
+    <li>Aucun historique de navigation n'est conservé</li>
+    <li>Aucune information d'identité (adresse IP, compte, appareil) n'est collectée</li>
+    <li>Aucun cookie n'est créé ou lu par l'extension</li>
+    <li>Aucune donnée n'est envoyée à un serveur distant, ni à ZEDD ni à des tiers</li>
+    <li>Aucun service d'analyse ou de télémétrie n'est intégré dans l'extension</li>
+  </ul>
+  <p>
+    Les données d'analyse (liste des trackers détectés, score, flags) sont uniquement stockées en mémoire RAM le temps de votre navigation sur un onglet, et sont effacées dès que vous fermez l'onglet ou rechargez la page.
+  </p>
+
+  <h2>3. Permissions utilisées</h2>
+  <p>ZeddHerald requiert les permissions suivantes, chacune strictement nécessaire à son fonctionnement :</p>
+
+  <div class="permission-card">
+    <div class="perm-name">webRequest</div>
+    <p>Permet d'observer les requêtes réseau émises par les pages visitées. Utilisée uniquement pour identifier les domaines tiers contactés et les classifier (tracker, CDN, fingerprinter…). Aucun contenu de requête ni aucune donnée personnelle n'est lu ou transmis.</p>
+  </div>
+
+  <div class="permission-card">
+    <div class="perm-name">webNavigation</div>
+    <p>Permet de détecter les changements de page (y compris les Single Page Applications) afin de réinitialiser l'analyse à chaque nouvelle navigation.</p>
+  </div>
+
+  <div class="permission-card">
+    <div class="perm-name">tabs</div>
+    <p>Permet d'identifier l'onglet actif lorsque vous ouvrez le popup, afin d'afficher le score correspondant à la page actuellement visitée.</p>
+  </div>
+
+  <div class="permission-card">
+    <div class="perm-name">storage</div>
+    <p>Non utilisée dans la version actuelle. Réservée pour une future fonctionnalité optionnelle d'historique local.</p>
+  </div>
+
+  <div class="permission-card">
+    <div class="perm-name">&lt;all_urls&gt;</div>
+    <p>Nécessaire pour que l'extension puisse analyser les requêtes réseau sur tous les sites visités, quel que soit leur domaine. Sans cette permission, l'extension ne pourrait fonctionner que sur une liste prédéfinie de sites.</p>
+  </div>
+
+  <h2>4. Partage de données avec des tiers</h2>
+  <p>
+    ZeddHerald ne partage aucune donnée avec des tiers. L'extension ne contient aucun SDK analytique, aucun pixel de tracking, aucune intégration publicitaire.
+  </p>
+  <p>
+    La base de données de trackers (trackers.json) est entièrement embarquée dans l'extension et ne nécessite aucune connexion réseau de la part de l'extension elle-même.
+  </p>
+
+  <h2>5. Stockage local</h2>
+  <p>
+    Les résultats d'analyse sont conservés uniquement en mémoire vive (RAM) pendant la durée de la session de navigation sur chaque onglet. Ces données disparaissent automatiquement à la fermeture de l'onglet ou du navigateur. Aucune donnée n'est écrite sur le disque par l'extension.
+  </p>
+
+  <h2>6. Mineurs</h2>
+  <p>
+    ZeddHerald n'est pas spécifiquement destiné aux mineurs. L'extension ne collectant aucune donnée personnelle, aucune disposition particulière n'est nécessaire à cet égard.
+  </p>
+
+  <h2>7. Modifications de cette politique</h2>
+  <p>
+    En cas de modification significative de cette politique (par exemple lors de l'ajout d'une fonctionnalité impliquant du stockage de données), la date de mise à jour sera modifiée en haut de cette page et une note sera ajoutée dans les notes de version de l'extension.
+  </p>
+
+  <div class="contact-box">
+    <h3>Contact</h3>
+    <p>
+      Pour toute question relative à cette politique de confidentialité :<br><br>
+      <strong>ZEDD</strong> – Agence web, Grenoble (France)<br>
+      Email : <a href="mailto:support@zedd.fr">support@zedd.fr</a><br>
+      Site : <a href="https://zedd.fr" target="_blank">zedd.fr</a>
+    </p>
+  </div>
+
+  <footer>
+    ZeddHerald est un projet open-source développé par ZEDD · Grenoble, France<br>
+    Cette politique s'applique à l'extension ZeddHerald pour Chrome et Firefox.
+  </footer>
+
+</div>
+</body>
+</html>

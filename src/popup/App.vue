@@ -52,6 +52,7 @@
         <div class="score-meta">
           <div class="score-label" :style="{ color: scoreColor }">{{ state.label }}</div>
           <div class="score-sub">{{ state.requests.thirdParty }} domaines tiers / {{ state.requests.total }} req.</div>
+          <div class="score-disclaimer"><em>Un indicateur, pas une certitude.</em></div>
           <!-- Server-side tagging warning -->
           <div v-if="state.sstWarning" class="sst-badge" @mouseenter="showSstTooltip = true" @mouseleave="showSstTooltip = false">
             <span class="sst-icon">🔀</span>
@@ -477,7 +478,8 @@ onMounted(async () => {
 .score-max { font-size: 10px; color: #64748b; }
 .score-meta { flex: 1; }
 .score-label { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-.score-sub { font-size: 11px; color: #64748b; margin-bottom: 6px; }
+.score-sub { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+.score-disclaimer { font-size: 9px; color: #334155; letter-spacing: 0.03em; font-style: italic; margin-bottom: 6px; }
 .score-breakdown { display: flex; flex-wrap: wrap; gap: 4px; }
 .breakdown-chip {
   font-size: 9px;
@@ -568,6 +570,7 @@ onMounted(async () => {
   pointer-events: none;
   box-shadow: 0 8px 24px rgba(0,0,0,0.8);
   font-weight: 400;
+  opacity: 1 !important;
 }
 .penalty-status { font-size: 11px; font-weight: 600; }
 .penalty-status.ok { color: #22c55e; }

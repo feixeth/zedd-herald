@@ -5,7 +5,7 @@
   "description": "Audit personnel de confidentialité web — snapshot instantané par site",
   "browser_specific_settings": {
     "gecko": {
-      "id": "privacy-guard@zedd.dev",
+      "id": "support@zedd.fr",
       "strict_min_version": "109.0"
     }
   },

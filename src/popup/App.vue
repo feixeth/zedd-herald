@@ -104,7 +104,11 @@
           <div class="penalty-row" :class="{ active: !state.flags.hasHTTPS }">
             <div class="penalty-icon">🔒</div>
             <div class="penalty-info">
-              <span class="penalty-name">HTTPS</span>
+              <span class="penalty-name">
+                HTTPS
+                <span class="info-btn" @mouseenter="showInfo('https')" @mouseleave="activeInfo = null">ℹ</span>
+                <div v-if="activeInfo === 'https'" class="info-tooltip">{{ INFO['https'] }}</div>
+              </span>
               <span class="penalty-status" :class="state.flags.hasHTTPS ? 'ok' : 'bad'">
                 {{ state.flags.hasHTTPS ? 'Sécurisé' : '-5 pts' }}
               </span>
@@ -114,7 +118,11 @@
           <div class="penalty-row" :class="{ active: state.requests.fingerprinters.length > 0 }">
             <div class="penalty-icon">🖐️</div>
             <div class="penalty-info">
-              <span class="penalty-name">Fingerprinting</span>
+              <span class="penalty-name">
+                Fingerprinting
+                <span class="info-btn" @mouseenter="showInfo('fp')" @mouseleave="activeInfo = null">ℹ</span>
+                <div v-if="activeInfo === 'fp'" class="info-tooltip">{{ INFO['fp'] }}</div>
+              </span>
               <span class="penalty-status" :class="state.requests.fingerprinters.length === 0 ? 'ok' : 'bad'">
                 {{ state.requests.fingerprinters.length === 0 ? 'Aucun' : `-25 pts (${state.requests.fingerprinters.length})` }}
               </span>
@@ -124,7 +132,11 @@
           <div class="penalty-row" :class="{ active: (trackersByCategory.advertising_major?.length ?? 0) > 0 }">
             <div class="penalty-icon">⚠️</div>
             <div class="penalty-info">
-              <span class="penalty-name">GAFAM publicitaires</span>
+              <span class="penalty-name">
+                GAFAM publicitaires
+                <span class="info-btn" @mouseenter="showInfo('gafam')" @mouseleave="activeInfo = null">ℹ</span>
+                <div v-if="activeInfo === 'gafam'" class="info-tooltip">{{ INFO['gafam'] }}</div>
+              </span>
               <span class="penalty-status" :class="(trackersByCategory.advertising_major?.length ?? 0) === 0 ? 'ok' : 'bad'">
                 {{ (trackersByCategory.advertising_major?.length ?? 0) === 0 ? 'Aucun' : `-${advMajorDeduction} pts (${trackersByCategory.advertising_major.length})` }}
               </span>
@@ -134,7 +146,11 @@
           <div class="penalty-row" :class="{ active: trackersByCategory.advertising.length > 0 }">
             <div class="penalty-icon">📢</div>
             <div class="penalty-info">
-              <span class="penalty-name">Trackers pub</span>
+              <span class="penalty-name">
+                Trackers pub
+                <span class="info-btn" @mouseenter="showInfo('adv')" @mouseleave="activeInfo = null">ℹ</span>
+                <div v-if="activeInfo === 'adv'" class="info-tooltip">{{ INFO['adv'] }}</div>
+              </span>
               <span class="penalty-status" :class="trackersByCategory.advertising.length === 0 ? 'ok' : 'bad'">
                 {{ trackersByCategory.advertising.length === 0 ? 'Aucun' : `-${advDeduction} pts (${trackersByCategory.advertising.length})` }}
               </span>
@@ -144,7 +160,11 @@
           <div class="penalty-row" :class="{ active: trackersByCategory.social.length > 0 }">
             <div class="penalty-icon">👥</div>
             <div class="penalty-info">
-              <span class="penalty-name">Pixels sociaux</span>
+              <span class="penalty-name">
+                Pixels sociaux
+                <span class="info-btn" @mouseenter="showInfo('social')" @mouseleave="activeInfo = null">ℹ</span>
+                <div v-if="activeInfo === 'social'" class="info-tooltip">{{ INFO['social'] }}</div>
+              </span>
               <span class="penalty-status" :class="trackersByCategory.social.length === 0 ? 'ok' : 'bad'">
                 {{ trackersByCategory.social.length === 0 ? 'Aucun' : `-${socialDeduction} pts (${trackersByCategory.social.length})` }}
               </span>
@@ -154,7 +174,11 @@
           <div class="penalty-row" :class="{ active: trackersByCategory.analytics.length > 0 }">
             <div class="penalty-icon">📊</div>
             <div class="penalty-info">
-              <span class="penalty-name">Analytics</span>
+              <span class="penalty-name">
+                Analytics
+                <span class="info-btn" @mouseenter="showInfo('analytics')" @mouseleave="activeInfo = null">ℹ</span>
+                <div v-if="activeInfo === 'analytics'" class="info-tooltip">{{ INFO['analytics'] }}</div>
+              </span>
               <span class="penalty-status" :class="trackersByCategory.analytics.length === 0 ? 'ok' : 'warn'">
                 {{ trackersByCategory.analytics.length === 0 ? 'Aucun' : `-${anaDeduction} pts (${trackersByCategory.analytics.length})` }}
               </span>
@@ -164,7 +188,11 @@
           <div class="penalty-row" :class="{ active: trackersByCategory.marketing.length > 0 }">
             <div class="penalty-icon">📧</div>
             <div class="penalty-info">
-              <span class="penalty-name">Marketing / CRM</span>
+              <span class="penalty-name">
+                Marketing / CRM
+                <span class="info-btn" @mouseenter="showInfo('crm')" @mouseleave="activeInfo = null">ℹ</span>
+                <div v-if="activeInfo === 'crm'" class="info-tooltip">{{ INFO['crm'] }}</div>
+              </span>
               <span class="penalty-status" :class="trackersByCategory.marketing.length === 0 ? 'ok' : 'warn'">
                 {{ trackersByCategory.marketing.length === 0 ? 'Aucun' : `-${mktDeduction} pts (${trackersByCategory.marketing.length})` }}
               </span>
@@ -174,7 +202,11 @@
           <div class="penalty-row" :class="{ active: (state.requests.tagManagers || []).length > 0 }">
             <div class="penalty-icon">🏷️</div>
             <div class="penalty-info">
-              <span class="penalty-name">Tag managers</span>
+              <span class="penalty-name">
+                Tag managers
+                <span class="info-btn" @mouseenter="showInfo('tms')" @mouseleave="activeInfo = null">ℹ</span>
+                <div v-if="activeInfo === 'tms'" class="info-tooltip">{{ INFO['tms'] }}</div>
+              </span>
               <span class="penalty-status" :class="(state.requests.tagManagers || []).length === 0 ? 'ok' : 'warn'">
                 {{ (state.requests.tagManagers || []).length === 0 ? 'Aucun' : `-${tmDeduction} pts (${state.requests.tagManagers.length})` }}
               </span>
@@ -184,7 +216,11 @@
           <div class="penalty-row" :class="{ active: state.flags.hasThirdPartyCookies }">
             <div class="penalty-icon">🍪</div>
             <div class="penalty-info">
-              <span class="penalty-name">Cookies tiers</span>
+              <span class="penalty-name">
+                Cookies tiers
+                <span class="info-btn" @mouseenter="showInfo('cookies')" @mouseleave="activeInfo = null">ℹ</span>
+                <div v-if="activeInfo === 'cookies'" class="info-tooltip">{{ INFO['cookies'] }}</div>
+              </span>
               <span class="penalty-status" :class="!state.flags.hasThirdPartyCookies ? 'ok' : 'bad'">
                 {{ state.flags.hasThirdPartyCookies ? '-8 pts' : 'Aucun' }}
               </span>
@@ -278,6 +314,22 @@ const state = ref(null)
 const loading = ref(true)
 const showCdns = ref(false)
 const showCmps = ref(false)
+const activeInfo = ref(null)
+function showInfo(key) {
+  activeInfo.value = key
+}
+
+const INFO = {
+  https:      "Le protocole HTTPS chiffre les échanges entre votre navigateur et le site. Sans HTTPS, vos données transitent en clair sur le réseau.",
+  fp:         "Le fingerprinting identifie votre navigateur de façon unique sans cookie, via des caractéristiques techniques (GPU, polices, résolution…). Très difficile à bloquer.",
+  gafam:      "Pixels publicitaires des grandes plateformes (Google Ads, Amazon Ads, Meta, TikTok, Bing). Pénalité forte car ces acteurs croisent vos données avec des milliards d'autres profils.",
+  adv:        "Trackers de réseaux publicitaires programmatiques : ils suivent vos visites sur des milliers de sites pour vous cibler avec des publicités.",
+  social:     "Pixels des réseaux sociaux (Facebook, Instagram, LinkedIn…). Même sans compte, ils trackent votre navigation et l'associent à votre profil si vous êtes connecté.",
+  analytics:  "Scripts de mesure d'audience : ils analysent votre comportement sur le site (pages vues, durée, clics). Moins intrusifs que la pub, mais transmettent vos données à des tiers.",
+  crm:        "Outils de marketing automation et CRM : ils tracent vos interactions pour déclencher des emails ciblés ou construire un profil commercial.",
+  tms:        "Les tag managers (GTM, TagCommander…) sont des orchestrateurs : ils peuvent charger n'importe quel tracker. Pénalité modérée car l'impact dépend de ce qu'ils déclenchent.",
+  cookies:    "Des domaines tiers ont déposé des cookies sur votre navigateur. Ces cookies peuvent tracer votre navigation sur d'autres sites.",
+}
 const showRepTooltip = ref(false)
 const showSstTooltip = ref(false)
 
@@ -443,6 +495,7 @@ onMounted(async () => {
 .section {
   padding: 10px 16px;
   border-bottom: 1px solid #1e293b;
+  overflow: visible;
 }
 .section-title {
   font-size: 10px;
@@ -452,8 +505,9 @@ onMounted(async () => {
   margin-bottom: 8px;
   font-weight: 600;
 }
-.penalties { display: flex; flex-direction: column; gap: 4px; }
+.penalties { display: flex; flex-direction: column; gap: 4px; overflow: visible; }
 .penalty-row {
+  overflow: visible;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -471,8 +525,50 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  overflow: visible;
 }
-.penalty-name { font-size: 12px; }
+.penalty-name {
+  font-size: 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #1e3a5f;
+  color: #60a5fa;
+  font-size: 8px;
+  cursor: help;
+  flex-shrink: 0;
+  border: 1px solid #2a4a7f;
+  transition: background 0.15s;
+  font-family: serif;
+  font-style: italic;
+}
+.info-btn:hover { background: #2a4a7f; }
+.info-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 230px;
+  background: #1e293b;
+  border: 1px solid #3d7aed;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: #cbd5e1;
+  line-height: 1.6;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+  font-weight: 400;
+}
 .penalty-status { font-size: 11px; font-weight: 600; }
 .penalty-status.ok { color: #22c55e; }
 .penalty-status.bad { color: #ef4444; }

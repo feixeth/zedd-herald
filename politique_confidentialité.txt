@@ -190,11 +190,6 @@
   </div>
 
   <div class="permission-card">
-    <div class="perm-name">storage</div>
-    <p>Non utilisée dans la version actuelle. Réservée pour une future fonctionnalité optionnelle d'historique local.</p>
-  </div>
-
-  <div class="permission-card">
     <div class="perm-name">&lt;all_urls&gt;</div>
     <p>Nécessaire pour que l'extension puisse analyser les requêtes réseau sur tous les sites visités, quel que soit leur domaine. Sans cette permission, l'extension ne pourrait fonctionner que sur une liste prédéfinie de sites.</p>
   </div>

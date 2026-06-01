@@ -16,7 +16,6 @@
   "permissions": [
     "webRequest",
     "tabs",
-    "activeTab",
     "webNavigation"
   ],
   "host_permissions": [

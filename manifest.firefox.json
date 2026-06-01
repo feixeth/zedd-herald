@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ZeddHerald",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "description": "Audit personnel de confidentialité web — snapshot instantané par site",
   "browser_specific_settings": {
   "gecko": {

@@ -93,7 +93,7 @@ L'idée est de garder la philosophie du projet intacte : aucune dépendance à u
 ## Installation locale
 
 ```bash
-git clone https://github.com/zedd-dev/zeddherald
+git clone https://github.com/feixeth/zedd-herald
 cd zeddherald
 npm install
 npm run build:chrome   # ou build:firefox
@@ -255,7 +255,7 @@ The goal is to preserve the project's philosophy: no dependency on external serv
 ## Local installation
 
 ```bash
-git clone https://github.com/zedd-dev/zeddherald
+git clone https://github.com/feixeth/zedd-herald
 cd zeddherald
 npm install
 npm run build:chrome   # or build:firefox

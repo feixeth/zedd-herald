@@ -7,6 +7,11 @@ function createFreshState(domain) {
   return {
     domain,
     score: 100,
+    breakdown: {
+      reputation: 0, https: 0, cookies: 0, fingerprinting: 0,
+      tagManagers: 0, advMajor: 0, advertising: 0, social: 0,
+      analytics: 0, marketing: 0, other: 0
+    },
     requests: {
       total: 0,
       thirdParty: 0,
@@ -55,29 +60,19 @@ function classifyDomain(domain) {
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 function calculateScore(state) {
   let score = 100
+  const breakdown = {
+    reputation: 0, https: 0, cookies: 0, fingerprinting: 0,
+    tagManagers: 0, advMajor: 0, advertising: 0, social: 0,
+    analytics: 0, marketing: 0, other: 0
+  }
 
-  // Réputation du domaine (first-party tracking)
-  if (state.reputation) score -= state.reputation.penalty
+  if (state.reputation) { breakdown.reputation = state.reputation.penalty; score -= breakdown.reputation }
+  if (!state.flags.hasHTTPS) { breakdown.https = 5; score -= 5 }
+  if (state.flags.hasThirdPartyCookies) { breakdown.cookies = 8; score -= 8 }
+  if (state.requests.fingerprinters.length > 0) { breakdown.fingerprinting = 25; score -= 25 }
 
-  // HTTPS
-  if (!state.flags.hasHTTPS) score -= 5
-
-  // Cookies tiers
-  if (state.flags.hasThirdPartyCookies) score -= 8
-
-  // Fingerprinting (pénalité unique fixe -25)
-  if (state.requests.fingerprinters.length > 0) score -= 25
-
-  // Tag managers : -3 par TMS, plafond -6
-  score -= Math.min(state.requests.tagManagers.length * 3, 6)
-
-  // CMP : 0 pénalité (juste affiché)
-
-  // Trackers : pénalité par sous-catégorie
-  // Advertising : -10/-8/-6 dégressif, plafond -30
-  // Social : -8 fixe par réseau, plafond -16
-  // Analytics : -4/-3/-2 dégressif, plafond -12
-  // Marketing : -4/-3 dégressif, plafond -8
+  breakdown.tagManagers = Math.min(state.requests.tagManagers.length * 3, 6)
+  score -= breakdown.tagManagers
 
   const byCategory = { advertising_major: [], advertising: [], social: [], analytics: [], marketing: [], other: [] }
   for (const t of state.requests.trackers) {
@@ -86,32 +81,31 @@ function calculateScore(state) {
     else byCategory.other.push(t)
   }
 
-  // Advertising major (GAFAM) : -20 fixe par domaine, plafond -40
-  const majorCount = byCategory.advertising_major?.length ?? 0
-  score -= Math.min(majorCount * 20, 40)
+  breakdown.advMajor = Math.min((byCategory.advertising_major?.length ?? 0) * 20, 40)
+  score -= breakdown.advMajor
 
-  // Advertising standard
   let advPen = 0
   byCategory.advertising.forEach((_, i) => { advPen += [10, 8, 6][i] ?? 4 })
-  score -= Math.min(advPen, 30)
+  breakdown.advertising = Math.min(advPen, 30)
+  score -= breakdown.advertising
 
-  // Social
-  score -= Math.min(byCategory.social.length * 8, 16)
+  breakdown.social = Math.min(byCategory.social.length * 8, 16)
+  score -= breakdown.social
 
-  // Analytics
   let anaPen = 0
   byCategory.analytics.forEach((_, i) => { anaPen += [4, 3, 2][i] ?? 1 })
-  score -= Math.min(anaPen, 12)
+  breakdown.analytics = Math.min(anaPen, 12)
+  score -= breakdown.analytics
 
-  // Marketing
   let mktPen = 0
   byCategory.marketing.forEach((_, i) => { mktPen += [4, 3][i] ?? 2 })
-  score -= Math.min(mktPen, 8)
+  breakdown.marketing = Math.min(mktPen, 8)
+  score -= breakdown.marketing
 
-  // Other (fallback)
-  score -= Math.min(byCategory.other.length * 3, 9)
+  breakdown.other = Math.min(byCategory.other.length * 3, 9)
+  score -= breakdown.other
 
-  return Math.max(0, score)
+  return { score: Math.max(0, score), breakdown }
 }
 
 function getScoreLabel(score) {
@@ -135,6 +129,14 @@ async function updateBadge(tabId, score) {
   } catch (e) { /* onglet fermé */ }
 }
 
+function broadcastState(tabId, state) {
+  browser.runtime.sendMessage({
+    type: 'STATE_UPDATE',
+    tabId,
+    state: { ...state, label: getScoreLabel(state.score) }
+  }).catch(() => {})
+}
+
 function isSystemUrl(url) {
   if (!url) return true
   return ['chrome://', 'chrome-extension://', 'moz-extension://', 'about:', 'edge://'].some(p => url.startsWith(p))
@@ -155,6 +157,7 @@ function initTab(tabId, url) {
   tabStates.set(tabId, state)
   console.log(`[ZH] Init tab ${tabId} → ${domain}${repData ? ' [REPUTATION]' : ''}`)
   updateBadge(tabId, 100)
+  broadcastState(tabId, state)
   return true
 }
 
@@ -220,8 +223,9 @@ browser.webRequest.onBeforeRequest.addListener(
       default:             state.requests.unknown.push(requestRoot)
     }
 
-    state.score = calculateScore(state)
+    ;({ score: state.score, breakdown: state.breakdown } = calculateScore(state))
     updateBadge(tabId, state.score)
+    broadcastState(tabId, state)
   },
   { urls: ['<all_urls>'] }
 )
@@ -236,8 +240,9 @@ browser.webRequest.onHeadersReceived.addListener(
     if (reqRoot === state.domain) return
     if (responseHeaders.some(h => h.name.toLowerCase() === 'set-cookie') && !state.flags.hasThirdPartyCookies) {
       state.flags.hasThirdPartyCookies = true
-      state.score = calculateScore(state)
+      ;({ score: state.score, breakdown: state.breakdown } = calculateScore(state))
       updateBadge(tabId, state.score)
+      broadcastState(tabId, state)
     }
   },
   { urls: ['<all_urls>'] },

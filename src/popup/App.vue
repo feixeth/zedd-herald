@@ -139,7 +139,7 @@
                 <div v-if="activeInfo === 'gafam'" class="info-tooltip">{{ INFO['gafam'] }}</div>
               </span>
               <span class="penalty-status" :class="(trackersByCategory.advertising_major?.length ?? 0) === 0 ? 'ok' : 'bad'">
-                {{ (trackersByCategory.advertising_major?.length ?? 0) === 0 ? 'Aucun' : `-${advMajorDeduction} pts (${trackersByCategory.advertising_major.length})` }}
+                {{ (trackersByCategory.advertising_major?.length ?? 0) === 0 ? 'Aucun' : `-${state.breakdown.advMajor} pts (${trackersByCategory.advertising_major.length})` }}
               </span>
             </div>
           </div>
@@ -153,7 +153,7 @@
                 <div v-if="activeInfo === 'adv'" class="info-tooltip">{{ INFO['adv'] }}</div>
               </span>
               <span class="penalty-status" :class="trackersByCategory.advertising.length === 0 ? 'ok' : 'bad'">
-                {{ trackersByCategory.advertising.length === 0 ? 'Aucun' : `-${advDeduction} pts (${trackersByCategory.advertising.length})` }}
+                {{ trackersByCategory.advertising.length === 0 ? 'Aucun' : `-${state.breakdown.advertising} pts (${trackersByCategory.advertising.length})` }}
               </span>
             </div>
           </div>
@@ -167,7 +167,7 @@
                 <div v-if="activeInfo === 'social'" class="info-tooltip">{{ INFO['social'] }}</div>
               </span>
               <span class="penalty-status" :class="trackersByCategory.social.length === 0 ? 'ok' : 'bad'">
-                {{ trackersByCategory.social.length === 0 ? 'Aucun' : `-${socialDeduction} pts (${trackersByCategory.social.length})` }}
+                {{ trackersByCategory.social.length === 0 ? 'Aucun' : `-${state.breakdown.social} pts (${trackersByCategory.social.length})` }}
               </span>
             </div>
           </div>
@@ -181,7 +181,7 @@
                 <div v-if="activeInfo === 'analytics'" class="info-tooltip">{{ INFO['analytics'] }}</div>
               </span>
               <span class="penalty-status" :class="trackersByCategory.analytics.length === 0 ? 'ok' : 'warn'">
-                {{ trackersByCategory.analytics.length === 0 ? 'Aucun' : `-${anaDeduction} pts (${trackersByCategory.analytics.length})` }}
+                {{ trackersByCategory.analytics.length === 0 ? 'Aucun' : `-${state.breakdown.analytics} pts (${trackersByCategory.analytics.length})` }}
               </span>
             </div>
           </div>
@@ -195,7 +195,7 @@
                 <div v-if="activeInfo === 'crm'" class="info-tooltip">{{ INFO['crm'] }}</div>
               </span>
               <span class="penalty-status" :class="trackersByCategory.marketing.length === 0 ? 'ok' : 'warn'">
-                {{ trackersByCategory.marketing.length === 0 ? 'Aucun' : `-${mktDeduction} pts (${trackersByCategory.marketing.length})` }}
+                {{ trackersByCategory.marketing.length === 0 ? 'Aucun' : `-${state.breakdown.marketing} pts (${trackersByCategory.marketing.length})` }}
               </span>
             </div>
           </div>
@@ -209,7 +209,7 @@
                 <div v-if="activeInfo === 'tms'" class="info-tooltip">{{ INFO['tms'] }}</div>
               </span>
               <span class="penalty-status" :class="(state.requests.tagManagers || []).length === 0 ? 'ok' : 'warn'">
-                {{ (state.requests.tagManagers || []).length === 0 ? 'Aucun' : `-${tmDeduction} pts (${state.requests.tagManagers.length})` }}
+                {{ (state.requests.tagManagers || []).length === 0 ? 'Aucun' : `-${state.breakdown.tagManagers} pts (${state.requests.tagManagers.length})` }}
               </span>
             </div>
           </div>
@@ -353,34 +353,24 @@ const trackersByCategory = computed(() => {
   return out
 })
 
-const advDeduction = computed(() => {
-  let p = 0
-  trackersByCategory.value.advertising.forEach((_, i) => { p += [10, 8, 6][i] ?? 4 })
-  return Math.min(p, 30)
-})
-const socialDeduction = computed(() => Math.min(trackersByCategory.value.social.length * 8, 16))
-const anaDeduction = computed(() => {
-  let p = 0
-  trackersByCategory.value.analytics.forEach((_, i) => { p += [4, 3, 2][i] ?? 1 })
-  return Math.min(p, 12)
-})
-const mktDeduction = computed(() => {
-  let p = 0
-  trackersByCategory.value.marketing.forEach((_, i) => { p += [4, 3][i] ?? 2 })
-  return Math.min(p, 8)
-})
-const tmDeduction = computed(() => Math.min((state.value?.requests.tagManagers || []).length * 3, 6))
-
-const advMajorDeduction = computed(() => Math.min((trackersByCategory.value.advertising_major?.length ?? 0) * 20, 40))
 
 function categoryLabel(cat) {
   return { analytics: 'Analytics', advertising: 'Pub', advertising_major: 'GAFAM', social: 'Social', marketing: 'CRM' }[cat] ?? cat
 }
 
 onMounted(async () => {
+  let currentTabId = null
+
+  browser.runtime.onMessage.addListener((message) => {
+    if (message.type === 'STATE_UPDATE' && message.tabId === currentTabId) {
+      state.value = message.state
+    }
+  })
+
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
     if (!tab?.id) { loading.value = false; return }
+    currentTabId = tab.id
     const response = await browser.runtime.sendMessage({ type: 'GET_STATE', tabId: tab.id })
     state.value = response
   } catch (e) {

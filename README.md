@@ -2,7 +2,7 @@
 
 **Un journal de confidentialité personnel. Pas un bloqueur. Un miroir.**
 
-Développé par [Félix](https://zedd.fr) — [ZEDD](https://zedd.fr)
+Développé par Félix De Gaudenzi — [ZEDD](https://zedd.fr)
 
 ---
 
@@ -16,7 +16,7 @@ Ce projet, c'est une façon de mettre des chiffres sur ce que tu ressens intuiti
 
 ---
 
-## Ce que ça fait (v0.2)
+## Ce que ça fait (v1.1)
 
 L'extension analyse chaque page que tu visites en temps réel et attribue un score de confidentialité entre 0 et 100.
 
@@ -64,7 +64,7 @@ Tout est calculé localement. Aucune donnée ne quitte ton navigateur. Aucun ser
 
 ---
 
-## Ce qui arrive ensuite (v0.3 → v1)
+## Ce qui arrive ensuite (v1.2 → v2.0)
 
 La prochaine étape connectera l'extension à une instance **Nextcloud** auto-hébergée via App Password.
 
@@ -86,7 +86,7 @@ L'idée est de garder la philosophie du projet intacte : aucune dépendance à u
 - Basée sur [DuckDuckGo Tracker Radar](https://github.com/duckduckgo/tracker-radar)
 - Enrichie manuellement d'acteurs français et européens (Valiuz, Beyable, Commanders Act, AT Internet, Brevo, iAdvize, Probance…)
 - Embarquée statiquement dans l'extension
-- 416 trackers · 2 594 fingerprinters · 14 TMS · 35 CMP · 1 202 CDN
+- 417 trackers · 2 587 fingerprinters · 14 TMS · 35 CMP · 1 202 CDN
 
 ---
 
@@ -140,17 +140,16 @@ Les listes de trackers sont statiques. Elles vieillissent. Une procédure de mis
 
 ## Roadmap
 
-- [x] v0.1 — Extension standalone, scoring de base, Chrome + Firefox
-- [x] v0.2 — Scoring intent-based, catégorie GAFAM, CMP, avertissement SST, système de réputation, infobulles explicatives
-- [ ] v0.3 — Analyse de fichiers HAR, export rapport PDF
-- [ ] v0.4 — Module Nextcloud (historique local, dashboard, tendances)
-- [ ] v1.0 — Soumission Firefox Add-ons
+- [x] v1 — Extension standalone, scoring de base, Chrome + Firefox
+- [x] v1.1 — Scoring intent-based, catégorie GAFAM, CMP, avertissement SST, système de réputation, infobulles explicatives
+- [ ] v1.2 — Analyse de fichiers HAR, export rapport PDF
+- [ ] v2.0 — Module Nextcloud (historique local, dashboard, tendances)
 
 ---
 
 ## Auteur
 
-Félix — développeur fullstack et consultant technique, fondateur de [ZEDD](https://zedd.fr).
+Félix — développeur fullstack et consultant technique de [ZEDD](https://zedd.fr).
 
 ZEDD est une agence de développement web basée à Grenoble, spécialisée en e-commerce, applications sur mesure et infrastructure technique.
 

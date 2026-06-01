@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "ZheralD",
+  "name": "ZeddHerald",
   "version": "0.1.0",
   "description": "Audit personnel de confidentialit\u00e9 web \u2014 snapshot instantan\u00e9 par site",
   "permissions": [

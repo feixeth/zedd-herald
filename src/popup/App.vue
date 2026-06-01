@@ -303,7 +303,7 @@
 
     </template>
 
-    <div class="footer">ZeddHerald v0.2</div>
+    <div class="footer">ZeddHerald v1.1</div>
   </div>
 </template>
 
